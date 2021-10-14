@@ -1,4 +1,27 @@
-import ring_theory.subring
+import linear_algebra
+import field_theory.finite.basic
+
+open_locale big_operators
+
+lemma card_subtype_eq_iff (α : Type*) (p : α → Prop) [decidable_pred p] [fintype α] :
+  fintype.card ({x // p x}) = fintype.card α ↔ ∀ x, p x :=
+begin
+  rw [fintype.card_subtype p, finset.card_eq_iff_eq_univ, finset.eq_univ_iff_forall],
+  refine forall_congr (λ x, _),
+  rw [finset.mem_filter],
+  exact ⟨λ ⟨_, h⟩, h, λ h, ⟨finset.mem_univ x, h⟩⟩
+end
+
+lemma set.card_coe_sort_eq_iff (α : Type*) (S : set α) [decidable_pred (λ x, x ∈ S)] [fintype α] :
+  fintype.card S = fintype.card α ↔ ∀ x, x ∈ S :=
+card_subtype_eq_iff α (λ x, x ∈ S)
+
+lemma card_eq_pow_finrank' {K V : Type*} [division_ring K] [add_comm_group V] [module K V] [fintype K] [fintype V] :
+  fintype.card V = (fintype.card K) ^ (finite_dimensional.finrank K V) :=
+begin
+  let b := is_noetherian.finset_basis K V,
+  rw [module.card_fintype b, ← finite_dimensional.finrank_eq_card_basis b],
+end
 
 lemma subsemiring.center_eq_top_iff (R : Type*) [semiring R] : 
   subsemiring.center R = ⊤ ↔ commutative ((*) : R → R → R) :=
@@ -16,31 +39,44 @@ begin
   refl
 end
 
-def submonoid.commute_with {M : Type*} [monoid M] (x : M) : submonoid M :=
+def submonoid.centralizer {M : Type*} [monoid M] (x : M) : submonoid M :=
 { carrier := {y | commute x y}, 
   one_mem' := commute.one_right x,
   mul_mem' := λ a b, commute.mul_right }
 
-def subgroup.commute_with {G : Type*} [group G] (x : G) : subgroup G :=
+def subgroup.centralizer {G : Type*} [group G] (x : G) : subgroup G :=
 { inv_mem' := λ a, commute.inv_right,
-  ..submonoid.commute_with x }
+  ..submonoid.centralizer x }
 
-def subsemiring.commute_with {R : Type*} [semiring R] (x : R) : subsemiring R :=
+def subsemiring.centralizer {R : Type*} [semiring R] (x : R) : subsemiring R :=
 { zero_mem' := commute.zero_right x,
   add_mem' := λ a b, commute.add_right,
-  ..submonoid.commute_with x }
+  ..submonoid.centralizer x }
 
-def subring.commute_with {R : Type*} [ring R] (x : R) : subring R :=
+def subring.centralizer {R : Type*} [ring R] (x : R) : subring R :=
 { neg_mem' := λ a, commute.neg_right,
-  ..subsemiring.commute_with x }
+  ..subsemiring.centralizer x }
 
-instance subring.commute_with.division_ring {R : Type*} [division_ring R] (x : R) : 
-division_ring (subring.commute_with x) :=
+instance subring.centralizer.division_ring {R : Type*} [division_ring R] (x : R) : 
+division_ring (subring.centralizer x) :=
 { inv := λ ⟨y, hy⟩, ⟨y⁻¹, commute.inv_right' hy⟩,
   mul_inv_cancel := λ ⟨a, ha⟩ h, subtype.ext $ mul_inv_cancel $ subtype.coe_injective.ne h,
   inv_zero := subtype.ext inv_zero,
-  ..(subring.commute_with x).nontrivial,
-  ..(subring.commute_with x).to_ring }
+  ..(subring.centralizer x).nontrivial,
+  ..(subring.centralizer x).to_ring }
+
+def submodule.centralizer {R : Type*} [ring R] (x : R) : 
+  submodule (subring.center R) R := 
+{ smul_mem' := λ c y (hy : commute x y), 
+    calc x * c • y 
+        = x * (c * y) : by rw [subring.smul_def, smul_eq_mul]
+    ... = (x * c) * y : by rw mul_assoc
+    ... = (c * x) * y : by have : x * ↑c = ↑c * x := c.2 x; rw this
+    ... = c * (x * y) : by rw mul_assoc
+    ... = c * (y * x) : by rw hy.eq
+    ... = (c * y) * x : by rw mul_assoc
+    ... = c • y * x : by rw [subring.smul_def, smul_eq_mul],
+  ..subring.centralizer x }
 
 def units_submonoid_equiv {M : Type*} [monoid M] (S : submonoid M) 
   (hS : ∀ x : units M, (x : M) ∈ S → ((x⁻¹ : units M) : M) ∈ S) :
