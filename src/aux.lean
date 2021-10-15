@@ -100,3 +100,50 @@ begin
     (set.fintype_insert _ _), fintype.card_congr (equiv.set.univ A).symm],
   congr; simp [set.ext_iff, classical.em]
 end
+
+section class_formula
+
+/-!
+## Class formula corollary on the number of fixed points
+-/
+
+open fintype mul_action function
+
+variables {G X : Type*} [group G] [mul_action G X] [fintype X] [Π (x : X), fintype (orbit G x)]
+  [fintype (quotient $ orbit_rel G X)] [fintype (mul_action.fixed_points G X)]
+
+local notation `Ω` := (quotient $ orbit_rel G X)
+
+lemma card_eq_sum_card_orbits' {φ : Ω → X} (hφ : left_inverse quotient.mk' φ) : 
+  card X = ∑ (ω : Ω), card (orbit G (φ ω)) :=
+by rw [card_congr (self_equiv_sigma_orbits' G X hφ), card_sigma]
+
+lemma card_eq_card_fixed_points_add_sum_card_nontrivial_orbits'
+  {φ : Ω → X} (hφ : left_inverse quotient.mk' φ) 
+  [decidable_pred (λ (ω : Ω), φ ω ∈ mul_action.fixed_points G X)] : 
+  card X = 
+    (∑ ω in finset.filter (λ (ω : Ω), φ ω ∉ mul_action.fixed_points G X) finset.univ, 
+      card (orbit G (φ ω))) + 
+    card (mul_action.fixed_points G X) :=
+calc card X 
+      = ∑ (ω : Ω), card (orbit G (φ ω)) : card_eq_sum_card_orbits' hφ
+  ... = ∑ ω in finset.filter (λ (ω : Ω), φ ω ∈ mul_action.fixed_points G X) finset.univ, 
+          card (orbit G (φ ω)) +
+        ∑ ω in finset.filter (λ (ω : Ω), φ ω ∉ mul_action.fixed_points G X) finset.univ, 
+          card (orbit G (φ ω)) : (finset.sum_filter_add_sum_filter_not _ _ _).symm
+  ... = ∑ ω in finset.filter (λ (ω : Ω), φ ω ∈ mul_action.fixed_points G X) finset.univ, 
+          1 +
+        ∑ ω in finset.filter (λ (ω : Ω), φ ω ∉ mul_action.fixed_points G X) finset.univ, 
+          card (orbit G (φ ω)) : 
+        by {congr' 1, conv {congr, congr,  } }
+  ... = _ : sorry
+
+lemma dvd_card_trivial_orbit' 
+  {φ : Ω → X} (hφ : left_inverse quotient.mk' φ) {n : ℕ} (hn₁ : n ∣ card X) 
+  (hn₂ : ∀ (x : X), x ∉ mul_action.fixed_points G X → n ∣ card (orbit G x)) : 
+  n ∣ card (mul_action.fixed_points G X) :=
+begin
+  
+end
+
+end class_formula

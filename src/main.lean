@@ -101,7 +101,13 @@ begin
   exact forall_congr (λ x, ⟨λ h, eq.symm h, λ h, eq.symm h⟩)
 end
 
-lemma key₁ [fintype Ω] (ω : Ω) : 
+#check units_submonoid_equiv
+
+def foo [fintype Ω] : 
+  units K ≃ {ω : Ω // ¬ d ω.out' < n} :=
+{ to_fun := λ k, ⟨@orbit (units A) (units A) _ conj_action (k : units A), _⟩}
+
+lemma key₁ [fintype Ω] : 
   ∑ ω in finset.filter (λ (ω : Ω), ¬ d ω.out' < n) finset.univ, 
     (q^n - 1) / (q^(d ω.out') - 1) = q - 1 :=
 begin
